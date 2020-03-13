@@ -1,65 +1,55 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <semaphore.h>
+#include <stdlib.h>
+#include <time.h>
 
-#define SHM_SIZE 1024 //shared memory size
+#define MAX_LINE_LENGTH 1000
+#define MAX_LINE_COUNT 200
 
-void swap (char *fp);
-
-int main (int argc, char **argv)
+void readFile(char *arg)
 {
-	FILE * input_file;
-	char* input;
-	int shmem_handle;
-	char * shmem_point;
-	int * read_from_file;
-	int finished = 0;
-        key_t key;
-        sem_t sem_buffer;
-	if (argc > 1) //if user enters a file
+        //Copy the filename to buf
+        char buf[100];
+        strncpy(buf, arg, sizeof(buf));
+        buf[sizeof(buf)-1] = '\0';
+
+        //FID, line storage, and line array
+        FILE *fp;
+        char lineBuf[MAX_LINE_LENGTH];
+        char lines[MAX_LINE_COUNT][MAX_LINE_LENGTH];
+        fp = fopen(buf, "r");
+	int i = 0;
+	int counter = 0;
+	
+        //read the lines of the file to the max line count
+        while(fgets(lineBuf, sizeof(lineBuf), fp) && i < MAX_LINE_COUNT)
+        {
+                lineBuf[sizeof(lineBuf) - 1] = '\0';
+                strcpy(lines[i], lineBuf);
+                i++;
+		counter++;
+        }
+	
+	//generate random seed and number
+	srand(time(0));
+	int upper = counter - 1;
+	int lower = 0;
+	int randNum = (rand() % (upper - lower + 1)) + lower;
+	printf("Random line #%d  :  %s", randNum+1, lines[randNum]);
+}
+
+int main(int argc, char **argv)
+{
+
+	if (argc == 2)
 	{
-		input = argv[1]; //takes in name of file user gave
+		readFile(argv[1]);
 	}
 	else
 	{
-		printf ("please give a .txt input file : exiting program\n");
-		exit(1); //no file given
+		printf("\nThis program expects an argument.\n\n");
 	}
-	/*
-	if (input_file == NULL) //if file was not opened
-	{
-                printf("Could not open given file");
-                exit(1);
-        }
-	*/
-	swap (argv[1]);
-}
+	return 0;
 
-	void swap (char *fp)
-	{
-        FILE* file_input = fopen(fp,"r");
-        FILE* file_swap = fopen("screen.txt","w"); //temp swap file
-	if (file_input == NULL) //if file was not opened
-        {
-                printf("Could not open given file");
-                exit(1);
-        }
-        char buffer[3]; //one bigger for NULL byte
-        char first[2]; //used for memcpy
-        while (fread(buffer,1,2,file_input) == 2) //while reading from the file
-        {
-		memcpy (first , buffer , sizeof(buffer));
-                // fprintf(file_swap, "%c%c" , first[0] , first[1]); //swaped, unswap lol only for swap
-		printf("%c%c" , first[0] , first[1]);
-	}
-	printf  ("\0");  //null bit
-	printf  ("\n");  //new line bit
-        fclose(file_input); //always close when done
-        fclose(file_swap);
-	}
+
+}
